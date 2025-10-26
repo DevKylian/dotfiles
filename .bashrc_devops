@@ -26,6 +26,35 @@ alias gdc='git diff --cached'
 alias grh='git reset --hard'
 alias grs='git reset --soft HEAD~1'
 
+# Modern git switch (recommended over checkout)
+alias gsw='git switch'
+alias gswt='git switch -t'
+
+# Branch management
+alias gba='git branch -a'
+alias gbD='git branch -D'
+
+# Fetch & Push
+alias gfa='git fetch --all --prune'
+alias gpf='git push --force-with-lease'
+alias gpu='git push -u origin'
+
+# Commit advanced
+alias gcn='git commit --amend --no-edit'
+alias gcp='git cherry-pick'
+
+# Info & Debug
+alias grv='git remote -v'
+alias gsh='git show'
+alias grl='git reflog'
+alias gt='git tag'
+alias gtl='git tag -l'
+
+# Rebase
+alias grbi='git rebase -i'
+alias grba='git rebase --abort'
+alias grbc='git rebase --continue'
+
 # ============= DOCKER ALIASES =============
 alias d='docker'
 alias dc='docker-compose'
@@ -238,38 +267,59 @@ help() {
             echo "  gs              - git status"
             echo "  gl              - git log (graph)"
             echo "  gb              - git branch"
+            echo "  gba             - git branch -a (all branches)"
             echo "  gd              - git diff"
             echo "  gdc             - git diff --cached"
+            echo "  gsh             - git show (last commit)"
+            echo "  grl             - git reflog (recover commits)"
+            echo "  grv             - git remote -v (show remotes)"
             echo ""
             echo "[COMMIT & PUSH]"
             echo "  ga <file>       - git add <file>"
             echo "  gaa             - git add ."
             echo "  gc 'msg'        - git commit -m 'msg'"
             echo "  gca             - git commit --amend"
+            echo "  gcn             - git commit --amend --no-edit"
             echo "  gcm 'msg'       - add + commit + push"
             echo ""
             echo "[SYNC]"
             echo "  gp              - git push"
+            echo "  gpu             - git push -u origin (push + track)"
+            echo "  gpf             - git push --force-with-lease (safe force)"
             echo "  gpl             - git pull"
+            echo "  gfa             - git fetch --all --prune"
             echo "  gup             - update from main/master"
             echo ""
-            echo "[BRANCHES]"
-            echo "  gco <branch>    - git checkout"
+            echo "[BRANCHES (modern switch)]"
+            echo "  gsw <branch>    - git switch (modern)"
+            echo "  gswt <branch>   - git switch -t (track remote)"
+            echo "  gco <branch>    - git checkout (legacy)"
             echo "  gcb <branch>    - create branch"
             echo "  gnb <branch>    - create + push branch"
             echo "  gbd <branch>    - delete branch"
+            echo "  gbD <branch>    - force delete branch"
             echo "  gm <branch>     - git merge"
+            echo ""
+            echo "[CHERRY-PICK & TAGS]"
+            echo "  gcp <commit>    - git cherry-pick"
+            echo "  gt              - git tag"
+            echo "  gtl             - git tag -l (list tags)"
             echo ""
             echo "[STASH]"
             echo "  gst             - git stash"
             echo "  gstp            - git stash pop"
             echo ""
+            echo "[REBASE]"
+            echo "  gr              - git rebase"
+            echo "  grbi            - git rebase -i (interactive)"
+            echo "  grba            - git rebase --abort"
+            echo "  grbc            - git rebase --continue"
+            echo ""
             echo "[RESET]"
             echo "  grh             - git reset --hard"
             echo "  grs             - git reset --soft HEAD~1"
-            echo "  gr              - git rebase"
             echo ""
-            echo "[ADVANCED]"
+            echo "[FUNCTIONS]"
             echo "  git-cleanup     - clean obsolete branches"
             echo "  git-sync        - sync all branches"
             echo ""
@@ -401,6 +451,9 @@ help() {
             echo "  gcm 'msg'               - add + commit + push"
             echo "  gnb <branch>            - create + push branch"
             echo "  gup                     - update from main/master"
+            echo "  gswt <branch>           - git switch -t (track remote)"
+            echo "  gcn                     - amend commit (no edit)"
+            echo "  gcp <commit>            - git cherry-pick"
             echo "  git-cleanup             - clean obsolete branches"
             echo "  git-sync                - sync all branches"
             echo ""
