@@ -1,0 +1,226 @@
+#!/bin/bash
+# =====================================================
+# Extended DevOps Functions
+# =====================================================
+
+# ============= GIT FUNCTIONS =============
+
+git-cleanup() {
+    echo "[*] Cleaning obsolete Git branches..."
+    
+    git fetch -p
+    
+    echo ""
+    echo "Merged branches (excluding main/master/develop):"
+    git branch --merged | grep -v "\*" | grep -v "main" | grep -v "master" | grep -v "develop"
+    
+    echo ""
+    read -p "Delete these branches? (y/n) " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        git branch --merged | grep -v "\*" | grep -v "main" | grep -v "master" | grep -v "develop" | xargs -n 1 git branch -d
+        echo "[+] Branches cleaned"
+    else
+        echo "[!] Cancelled"
+    fi
+}
+
+git-sync() {
+    echo "[*] Syncing with remote..."
+    
+    CURRENT_BRANCH=$(git branch --show-current)
+    
+    git fetch --all --prune
+    
+    echo "[*] Pulling current branch: $CURRENT_BRANCH"
+    git pull
+    
+    echo "[+] Sync complete"
+}
+
+# ============= DOCKER FUNCTIONS =============
+
+docker-shell() {
+    if [ -z "$1" ]; then
+        echo "Usage: docker-shell <partial-name>"
+        echo ""
+        echo "Available containers:"
+        docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+        return 1
+    fi
+    
+    CONTAINER=$(docker ps --format "{{.Names}}" | grep -i "$1" | head -n 1)
+    
+    if [ -z "$CONTAINER" ]; then
+        echo "[!] No container found matching: $1"
+        return 1
+    fi
+    
+    echo "[*] Connecting to: $CONTAINER"
+    
+    docker exec -it "$CONTAINER" /bin/bash 2>/dev/null || docker exec -it "$CONTAINER" /bin/sh
+}
+
+docker-ip() {
+    if [ -z "$1" ]; then
+        echo "Usage: docker-ip <container-name>"
+        echo ""
+        echo "Available containers:"
+        docker ps --format "{{.Names}}"
+        return 1
+    fi
+    
+    docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$1"
+}
+
+docker-stats-live() {
+    docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
+}
+
+# ============= NETWORK FUNCTIONS =============
+
+find-port() {
+    if [ -z "$1" ]; then
+        echo "Usage: find-port <port-number>"
+        return 1
+    fi
+    
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        netstat -ano | findstr ":$1"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        lsof -i ":$1"
+    else
+        lsof -i ":$1"
+    fi
+}
+
+kill-port() {
+    if [ -z "$1" ]; then
+        echo "Usage: kill-port <port-number>"
+        return 1
+    fi
+    
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        PORT=$1
+        PID=$(netstat -ano | findstr ":$PORT" | awk '{print $5}' | head -n 1)
+        if [ ! -z "$PID" ]; then
+            taskkill //PID $PID //F
+            echo "[+] Process on port $PORT killed"
+        else
+            echo "[!] No process found on port $PORT"
+        fi
+    else
+        lsof -ti:$1 | xargs kill -9
+        echo "[+] Process on port $1 killed"
+    fi
+}
+
+# ============= SYSTEM FUNCTIONS =============
+
+backup-config() {
+    BACKUP_DIR="$HOME/config-backup-$(date +%Y%m%d_%H%M%S)"
+    
+    echo "[*] Creating backup in: $BACKUP_DIR"
+    
+    mkdir -p "$BACKUP_DIR"
+    
+    [ -f ~/.bashrc ] && cp ~/.bashrc "$BACKUP_DIR/"
+    [ -f ~/.bashrc_devops ] && cp ~/.bashrc_devops "$BACKUP_DIR/"
+    [ -f ~/.bashrc_functions ] && cp ~/.bashrc_functions "$BACKUP_DIR/"
+    [ -f ~/.zshrc ] && cp ~/.zshrc "$BACKUP_DIR/"
+    [ -f ~/.gitconfig ] && cp ~/.gitconfig "$BACKUP_DIR/"
+    
+    echo "[+] Backup created: $BACKUP_DIR"
+    
+    read -p "Create tar.gz archive? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        tar -czf "$BACKUP_DIR.tar.gz" -C "$HOME" "$(basename $BACKUP_DIR)"
+        echo "[+] Archive created: $BACKUP_DIR.tar.gz"
+    fi
+}
+
+extract() {
+    if [ -z "$1" ]; then
+        echo "Usage: extract <archive>"
+        return 1
+    fi
+    
+    if [ -f "$1" ]; then
+        case "$1" in
+            *.tar.bz2)   tar xjf "$1"     ;;
+            *.tar.gz)    tar xzf "$1"     ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       unrar x "$1"     ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xf "$1"      ;;
+            *.tbz2)      tar xjf "$1"     ;;
+            *.tgz)       tar xzf "$1"     ;;
+            *.zip)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        7z x "$1"        ;;
+            *)           echo "[!] Cannot extract: $1" ;;
+        esac
+    else
+        echo "[!] File not found: $1"
+    fi
+}
+
+# ============= UTILITY FUNCTIONS =============
+
+weather() {
+    CITY=${1:-"Paris"}
+    curl -s "wttr.in/$CITY?format=3"
+}
+
+cheat() {
+    if [ -z "$1" ]; then
+        curl -s cheat.sh/:list
+    else
+        curl -s "cheat.sh/$1"
+    fi
+}
+
+# ============= EXPORT FUNCTIONS =============
+
+export -f git-cleanup
+export -f git-sync
+export -f docker-shell
+export -f docker-ip
+export -f docker-stats-live
+export -f find-port
+export -f kill-port
+export -f backup-config
+export -f extract
+export -f weather
+export -f cheat
+
+# ============= FUNCTION LIST =============
+
+functions-list() {
+    echo ""
+    echo "=== AVAILABLE FUNCTIONS ==="
+    echo ""
+    echo "[GIT]"
+    echo "  git-cleanup         - clean obsolete local branches"
+    echo "  git-sync            - sync all branches with remote"
+    echo ""
+    echo "[DOCKER]"
+    echo "  docker-shell <n> - enter container by partial name"
+    echo "  docker-ip <n>    - get container IP address"
+    echo "  docker-stats-live   - show live Docker stats"
+    echo ""
+    echo "[NETWORK]"
+    echo "  find-port <port>    - find process using port"
+    echo "  kill-port <port>    - kill process on port"
+    echo ""
+    echo "[SYSTEM]"
+    echo "  backup-config       - backup terminal configuration"
+    echo "  extract <archive>   - extract any archive type"
+    echo ""
+    echo "[UTILITIES]"
+    echo "  weather [city]      - show weather forecast"
+    echo "  cheat <command>     - show command cheatsheet"
+    echo ""
+}

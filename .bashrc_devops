@@ -1,0 +1,449 @@
+#!/bin/bash
+# =====================================================
+# DevOps Terminal Configuration
+# Compatible: Windows (Git Bash), macOS, Linux
+# =====================================================
+
+# ============= GIT ALIASES =============
+alias gs='git status'
+alias ga='git add'
+alias gaa='git add .'
+alias gc='git commit -m'
+alias gca='git commit --amend'
+alias gp='git push'
+alias gpl='git pull'
+alias gl='git log --oneline --graph --decorate --all'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gb='git branch'
+alias gbd='git branch -d'
+alias gm='git merge'
+alias gr='git rebase'
+alias gst='git stash'
+alias gstp='git stash pop'
+alias gd='git diff'
+alias gdc='git diff --cached'
+alias grh='git reset --hard'
+alias grs='git reset --soft HEAD~1'
+
+# ============= DOCKER ALIASES =============
+alias d='docker'
+alias dc='docker-compose'
+alias dps='docker ps'
+alias dpsa='docker ps -a'
+alias di='docker images'
+alias dex='docker exec -it'
+alias dl='docker logs -f'
+alias dsp='docker system prune -af'
+alias dvp='docker volume prune -f'
+alias drm='docker rm -f'
+alias drmi='docker rmi'
+alias dcu='docker-compose up -d'
+alias dcd='docker-compose down'
+alias dcl='docker-compose logs -f'
+alias dcr='docker-compose restart'
+alias dcp='docker-compose ps'
+
+# ============= KUBERNETES ALIASES =============
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get services'
+alias kgd='kubectl get deployments'
+alias kgn='kubectl get nodes'
+alias kd='kubectl describe'
+alias kl='kubectl logs -f'
+alias kex='kubectl exec -it'
+alias ka='kubectl apply -f'
+alias kdel='kubectl delete'
+alias kctx='kubectl config get-contexts'
+alias kns='kubectl config set-context --current --namespace'
+
+# ============= SYSTEM ALIASES =============
+alias ll='ls -lah'
+alias la='ls -A'
+alias l='ls -CF'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias c='clear'
+alias h='history'
+alias path='echo -e ${PATH//:/\\n}'
+alias reload='source ~/.bashrc'
+
+# OS-specific commands
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    alias open='explorer'
+    alias pbcopy='clip'
+    export OS_TYPE="windows"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    alias ls='ls -G'
+    export OS_TYPE="macos"
+else
+    alias ls='ls --color=auto'
+    export OS_TYPE="linux"
+fi
+
+# ============= CORE FUNCTIONS =============
+
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+hg() {
+    history | grep "$1"
+}
+
+psgrep() {
+    ps aux | grep -v grep | grep -i -e VSZ -e "$1"
+}
+
+ports() {
+    if [[ "$OS_TYPE" == "windows" ]]; then
+        netstat -ano | findstr LISTENING
+    else
+        lsof -i -P -n | grep LISTEN
+    fi
+}
+
+dclean() {
+    echo "[*] Cleaning Docker..."
+    docker system prune -af --volumes
+    echo "[+] Done"
+}
+
+dports() {
+    docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}"
+}
+
+dbash() {
+    docker exec -it "$1" /bin/bash 2>/dev/null || docker exec -it "$1" /bin/sh
+}
+
+gcm() {
+    git add .
+    git commit -m "$1"
+    git push
+}
+
+gnb() {
+    git checkout -b "$1"
+    git push -u origin "$1"
+}
+
+gup() {
+    CURRENT_BRANCH=$(git branch --show-current)
+    MAIN_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+    
+    echo "[*] Updating from $MAIN_BRANCH..."
+    git checkout "$MAIN_BRANCH"
+    git pull
+    git checkout "$CURRENT_BRANCH"
+    git merge "$MAIN_BRANCH"
+}
+
+dsize() {
+    du -sh */ 2>/dev/null | sort -h
+}
+
+# ============= PROMPT CONFIGURATION =============
+
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+}
+
+RED='\[\033[0;31m\]'
+GREEN='\[\033[0;32m\]'
+YELLOW='\[\033[0;33m\]'
+BLUE='\[\033[0;34m\]'
+CYAN='\[\033[0;36m\]'
+RESET='\[\033[0m\]'
+
+export PS1="${GREEN}\u${RESET}@${BLUE}\h${RESET}:${CYAN}\w${YELLOW}\$(parse_git_branch)${RESET}\$ "
+
+# ============= ENVIRONMENT VARIABLES =============
+
+export EDITOR='vim'
+export VISUAL='vim'
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoredups:erasedups
+
+# ============= LOAD ADDITIONAL FUNCTIONS =============
+
+if [ -f ~/.bashrc_functions ]; then
+    source ~/.bashrc_functions
+fi
+
+# ============= HELP SYSTEM =============
+
+aliases() {
+    echo ""
+    echo "=== GIT ALIASES ==="
+    alias | grep "git" | sed 's/alias /  /'
+    echo ""
+    echo "=== DOCKER ALIASES ==="
+    alias | grep "docker" | sed 's/alias /  /'
+    echo ""
+    echo "=== KUBERNETES ALIASES ==="
+    alias | grep "kubectl" | sed 's/alias /  /'
+    echo ""
+    echo "=== SYSTEM ALIASES ==="
+    alias | grep -E "^alias (ll|la|l|cd|c|h|path|reload)=" | sed 's/alias /  /'
+    echo ""
+    echo "=== CORE FUNCTIONS ==="
+    echo "  mkcd <dir>     - Create and enter directory"
+    echo "  hg <term>      - Search in history"
+    echo "  psgrep <term>  - Search process"
+    echo "  ports          - Show listening ports"
+    echo "  dclean         - Clean Docker completely"
+    echo "  dports         - Show container ports"
+    echo "  dbash <name>   - Enter container shell"
+    echo "  gcm <msg>      - Git add + commit + push"
+    echo "  gnb <name>     - Create and push branch"
+    echo "  gup            - Update from main/master"
+    echo "  dsize          - Directory sizes"
+    echo ""
+}
+
+help() {
+    local category="${1:-}"
+    
+    if [ -z "$category" ]; then
+        echo ""
+        echo "======================================"
+        echo "           HELP MENU"
+        echo "======================================"
+        echo ""
+        echo "Usage: help <category>"
+        echo ""
+        echo "Available categories:"
+        echo "  * help git          - Git commands"
+        echo "  * help docker       - Docker commands"
+        echo "  * help kubernetes   - Kubernetes commands"
+        echo "  * help system       - System commands"
+        echo "  * help functions    - Utility functions"
+        echo "  * help all          - Show everything"
+        echo ""
+        return 0
+    fi
+    
+    case "$category" in
+        git)
+            echo ""
+            echo "======================================"
+            echo "           GIT COMMANDS"
+            echo "======================================"
+            echo ""
+            echo "[STATUS & INFO]"
+            echo "  gs              - git status"
+            echo "  gl              - git log (graph)"
+            echo "  gb              - git branch"
+            echo "  gd              - git diff"
+            echo "  gdc             - git diff --cached"
+            echo ""
+            echo "[COMMIT & PUSH]"
+            echo "  ga <file>       - git add <file>"
+            echo "  gaa             - git add ."
+            echo "  gc 'msg'        - git commit -m 'msg'"
+            echo "  gca             - git commit --amend"
+            echo "  gcm 'msg'       - add + commit + push"
+            echo ""
+            echo "[SYNC]"
+            echo "  gp              - git push"
+            echo "  gpl             - git pull"
+            echo "  gup             - update from main/master"
+            echo ""
+            echo "[BRANCHES]"
+            echo "  gco <branch>    - git checkout"
+            echo "  gcb <branch>    - create branch"
+            echo "  gnb <branch>    - create + push branch"
+            echo "  gbd <branch>    - delete branch"
+            echo "  gm <branch>     - git merge"
+            echo ""
+            echo "[STASH]"
+            echo "  gst             - git stash"
+            echo "  gstp            - git stash pop"
+            echo ""
+            echo "[RESET]"
+            echo "  grh             - git reset --hard"
+            echo "  grs             - git reset --soft HEAD~1"
+            echo "  gr              - git rebase"
+            echo ""
+            echo "[ADVANCED]"
+            echo "  git-cleanup     - clean obsolete branches"
+            echo "  git-sync        - sync all branches"
+            echo ""
+            ;;
+            
+        docker)
+            echo ""
+            echo "======================================"
+            echo "          DOCKER COMMANDS"
+            echo "======================================"
+            echo ""
+            echo "[INFO]"
+            echo "  d               - docker"
+            echo "  dps             - docker ps"
+            echo "  dpsa            - docker ps -a"
+            echo "  di              - docker images"
+            echo "  dports          - show container ports"
+            echo ""
+            echo "[CONTAINERS]"
+            echo "  dex <name>      - docker exec -it"
+            echo "  dbash <name>    - enter container shell"
+            echo "  dl <name>       - docker logs -f"
+            echo "  drm <name>      - docker rm -f"
+            echo ""
+            echo "[IMAGES]"
+            echo "  drmi <image>    - docker rmi"
+            echo ""
+            echo "[CLEANUP]"
+            echo "  dsp             - docker system prune -af"
+            echo "  dvp             - docker volume prune -f"
+            echo "  dclean          - complete cleanup"
+            echo ""
+            echo "[COMPOSE]"
+            echo "  dc              - docker-compose"
+            echo "  dcu             - docker-compose up -d"
+            echo "  dcd             - docker-compose down"
+            echo "  dcl             - docker-compose logs -f"
+            echo "  dcr <service>   - docker-compose restart"
+            echo "  dcp             - docker-compose ps"
+            echo ""
+            echo "[ADVANCED]"
+            echo "  docker-shell <name>   - enter by partial name"
+            echo "  docker-ip <name>      - get container IP"
+            echo "  docker-stats-live     - live stats"
+            echo ""
+            ;;
+            
+        kubernetes|k8s)
+            echo ""
+            echo "======================================"
+            echo "        KUBERNETES COMMANDS"
+            echo "======================================"
+            echo ""
+            echo "[INFO]"
+            echo "  k               - kubectl"
+            echo "  kgp             - kubectl get pods"
+            echo "  kgs             - kubectl get services"
+            echo "  kgd             - kubectl get deployments"
+            echo "  kgn             - kubectl get nodes"
+            echo "  kd <resource>   - kubectl describe"
+            echo ""
+            echo "[LOGS & EXEC]"
+            echo "  kl <pod>        - kubectl logs -f"
+            echo "  kex <pod>       - kubectl exec -it"
+            echo ""
+            echo "[DEPLOYMENT]"
+            echo "  ka <file>       - kubectl apply -f"
+            echo "  kdel <resource> - kubectl delete"
+            echo ""
+            echo "[CONFIG]"
+            echo "  kctx            - show contexts"
+            echo "  kns <namespace> - change namespace"
+            echo ""
+            ;;
+            
+        system|sys)
+            echo ""
+            echo "======================================"
+            echo "         SYSTEM COMMANDS"
+            echo "======================================"
+            echo ""
+            echo "[NAVIGATION]"
+            echo "  ll              - ls -lah"
+            echo "  la              - ls -A"
+            echo "  l               - ls -CF"
+            echo "  ..              - cd .."
+            echo "  ...             - cd ../.."
+            echo "  ....            - cd ../../.."
+            echo ""
+            echo "[UTILITIES]"
+            echo "  c               - clear"
+            echo "  h               - history"
+            echo "  path            - show PATH"
+            echo "  reload          - reload config"
+            echo "  open <path>     - open in explorer"
+            echo ""
+            echo "[NETWORK]"
+            echo "  ports           - show listening ports"
+            echo "  psgrep <term>   - search process"
+            echo "  hg <term>       - search history"
+            echo ""
+            echo "[ADVANCED]"
+            echo "  find-port <port>    - find process on port"
+            echo "  kill-port <port>    - kill process on port"
+            echo ""
+            ;;
+            
+        functions|func|f)
+            echo ""
+            echo "======================================"
+            echo "        UTILITY FUNCTIONS"
+            echo "======================================"
+            echo ""
+            echo "[FILES]"
+            echo "  mkcd <dir>              - create and enter directory"
+            echo "  dsize                   - show directory sizes"
+            echo "  extract <archive>       - extract any archive"
+            echo ""
+            echo "[SEARCH]"
+            echo "  hg <term>               - search in history"
+            echo "  psgrep <term>           - search process"
+            echo ""
+            echo "[NETWORK]"
+            echo "  ports                   - show listening ports"
+            echo "  find-port <port>        - find process on port"
+            echo "  kill-port <port>        - kill process on port"
+            echo ""
+            echo "[GIT]"
+            echo "  gcm 'msg'               - add + commit + push"
+            echo "  gnb <branch>            - create + push branch"
+            echo "  gup                     - update from main/master"
+            echo "  git-cleanup             - clean obsolete branches"
+            echo "  git-sync                - sync all branches"
+            echo ""
+            echo "[DOCKER]"
+            echo "  dbash <name>            - enter container shell"
+            echo "  dports                  - show container ports"
+            echo "  dclean                  - complete Docker cleanup"
+            echo "  docker-shell <name>     - enter by partial name"
+            echo "  docker-ip <name>        - get container IP"
+            echo "  docker-stats-live       - live stats"
+            echo ""
+            echo "[BACKUP]"
+            echo "  backup-config           - backup terminal config"
+            echo ""
+            echo "[UTILITIES]"
+            echo "  weather [city]          - show weather"
+            echo "  cheat <command>         - show command cheatsheet"
+            echo ""
+            ;;
+            
+        all)
+            help git
+            help docker
+            help kubernetes
+            help system
+            help functions
+            ;;
+            
+        *)
+            echo ""
+            echo "[!] Unknown category: $category"
+            echo ""
+            echo "Available categories:"
+            echo "  * help git"
+            echo "  * help docker"
+            echo "  * help kubernetes"
+            echo "  * help system"
+            echo "  * help functions"
+            echo "  * help all"
+            echo ""
+            ;;
+    esac
+}
+
+alias h?='help'
+alias aide='help'
