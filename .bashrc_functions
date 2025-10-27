@@ -78,6 +78,226 @@ docker-stats-live() {
     docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
 }
 
+# ============= TERRAFORM FUNCTIONS =============
+
+tf-clean() {
+    echo "[*] Cleaning Terraform cache and files..."
+
+    if [ -d ".terraform" ]; then
+        rm -rf .terraform
+        echo "[+] Removed .terraform directory"
+    fi
+
+    if [ -f ".terraform.lock.hcl" ]; then
+        rm -f .terraform.lock.hcl
+        echo "[+] Removed .terraform.lock.hcl"
+    fi
+
+    if [ -f "terraform.tfstate" ]; then
+        echo "[!] Warning: terraform.tfstate found"
+        read -p "Delete terraform.tfstate? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            rm -f terraform.tfstate terraform.tfstate.backup
+            echo "[+] Removed state files"
+        fi
+    fi
+
+    if [ -f "crash.log" ]; then
+        rm -f crash.log
+        echo "[+] Removed crash.log"
+    fi
+
+    echo "[+] Terraform cleanup complete"
+}
+
+tf-check() {
+    echo "[*] Running Terraform checks..."
+    echo ""
+
+    echo "[1/3] Formatting..."
+    terraform fmt -recursive
+    echo ""
+
+    echo "[2/3] Validating..."
+    if ! terraform validate; then
+        echo "[!] Validation failed"
+        return 1
+    fi
+    echo ""
+
+    echo "[3/3] Planning..."
+    terraform plan
+
+    echo ""
+    echo "[+] All checks complete"
+}
+
+tf-new() {
+    PROJECT_NAME=${1:-"terraform-project"}
+
+    echo "[*] Creating new Terraform project: $PROJECT_NAME"
+
+    mkdir -p "$PROJECT_NAME"
+    cd "$PROJECT_NAME"
+
+    # Create main.tf
+    cat > main.tf <<'EOF'
+terraform {
+  required_version = ">= 1.0"
+
+  required_providers {
+    # Add your providers here
+    # Example:
+    # aws = {
+    #   source  = "hashicorp/aws"
+    #   version = "~> 5.0"
+    # }
+  }
+}
+
+# Provider configuration
+# provider "aws" {
+#   region = var.aws_region
+# }
+
+# Resources go here
+EOF
+
+    # Create variables.tf
+    cat > variables.tf <<'EOF'
+# Input variables
+
+# variable "environment" {
+#   description = "Environment name"
+#   type        = string
+#   default     = "dev"
+# }
+
+# variable "aws_region" {
+#   description = "AWS region"
+#   type        = string
+#   default     = "us-east-1"
+# }
+EOF
+
+    # Create outputs.tf
+    cat > outputs.tf <<'EOF'
+# Output values
+
+# output "example_output" {
+#   description = "Example output"
+#   value       = "example_value"
+# }
+EOF
+
+    # Create terraform.tfvars (gitignored)
+    cat > terraform.tfvars <<'EOF'
+# Variable values for this environment
+# environment = "dev"
+EOF
+
+    # Create .gitignore
+    cat > .gitignore <<'EOF'
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variable files (may contain sensitive data)
+*.tfvars
+*.tfvars.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Lock file (optional - some teams commit this)
+# .terraform.lock.hcl
+EOF
+
+    # Create README
+    cat > README.md <<EOF
+# $PROJECT_NAME
+
+Terraform infrastructure project.
+
+## Usage
+
+\`\`\`bash
+# Initialize
+terraform init
+
+# Plan changes
+terraform plan
+
+# Apply changes
+terraform apply
+
+# Destroy infrastructure
+terraform destroy
+\`\`\`
+
+## Structure
+
+- \`main.tf\` - Main configuration
+- \`variables.tf\` - Input variables
+- \`outputs.tf\` - Output values
+- \`terraform.tfvars\` - Variable values (gitignored)
+EOF
+
+    echo ""
+    echo "[+] Project created: $PROJECT_NAME"
+    echo ""
+    echo "Files created:"
+    echo "  - main.tf"
+    echo "  - variables.tf"
+    echo "  - outputs.tf"
+    echo "  - terraform.tfvars"
+    echo "  - .gitignore"
+    echo "  - README.md"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Edit main.tf to configure your infrastructure"
+    echo "  2. Run 'terraform init' to initialize"
+    echo "  3. Run 'terraform plan' to preview changes"
+}
+
+tf-graph-viz() {
+    if ! command -v dot &> /dev/null; then
+        echo "[!] Graphviz not installed. Install with:"
+        echo "    macOS: brew install graphviz"
+        echo "    Linux: sudo apt install graphviz"
+        return 1
+    fi
+
+    OUTPUT=${1:-"graph.png"}
+
+    echo "[*] Generating Terraform graph..."
+    terraform graph | dot -Tpng > "$OUTPUT"
+    echo "[+] Graph saved to: $OUTPUT"
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        open "$OUTPUT"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        xdg-open "$OUTPUT" 2>/dev/null || echo "[*] Open manually: $OUTPUT"
+    else
+        explorer "$OUTPUT"
+    fi
+}
+
 # ============= NETWORK FUNCTIONS =============
 
 find-port() {
@@ -189,6 +409,10 @@ export -f git-sync
 export -f docker-shell
 export -f docker-ip
 export -f docker-stats-live
+export -f tf-clean
+export -f tf-check
+export -f tf-new
+export -f tf-graph-viz
 export -f find-port
 export -f kill-port
 export -f backup-config
@@ -207,9 +431,15 @@ functions-list() {
     echo "  git-sync            - sync all branches with remote"
     echo ""
     echo "[DOCKER]"
-    echo "  docker-shell <n> - enter container by partial name"
-    echo "  docker-ip <n>    - get container IP address"
+    echo "  docker-shell <n>    - enter container by partial name"
+    echo "  docker-ip <n>       - get container IP address"
     echo "  docker-stats-live   - show live Docker stats"
+    echo ""
+    echo "[TERRAFORM]"
+    echo "  tf-clean            - clean Terraform cache & files"
+    echo "  tf-check            - validate + format + plan"
+    echo "  tf-new <name>       - create new Terraform project"
+    echo "  tf-graph-viz [file] - generate infrastructure graph"
     echo ""
     echo "[NETWORK]"
     echo "  find-port <port>    - find process using port"

@@ -87,6 +87,40 @@ alias kdel='kubectl delete'
 alias kctx='kubectl config get-contexts'
 alias kns='kubectl config set-context --current --namespace'
 
+# ============= TERRAFORM ALIASES =============
+alias tf='terraform'
+alias tfi='terraform init'
+alias tfp='terraform plan'
+alias tfa='terraform apply'
+alias tfaa='terraform apply -auto-approve'
+alias tfd='terraform destroy'
+alias tfda='terraform destroy -auto-approve'
+alias tff='terraform fmt'
+alias tfv='terraform validate'
+alias tfs='terraform show'
+alias tfo='terraform output'
+alias tfr='terraform refresh'
+
+# State management
+alias tfsl='terraform state list'
+alias tfss='terraform state show'
+alias tfsm='terraform state mv'
+alias tfsrm='terraform state rm'
+
+# Workspace management
+alias tfw='terraform workspace'
+alias tfwl='terraform workspace list'
+alias tfws='terraform workspace select'
+alias tfwn='terraform workspace new'
+alias tfwd='terraform workspace delete'
+
+# Advanced
+alias tfg='terraform graph'
+alias tfc='terraform console'
+alias tft='terraform taint'
+alias tfu='terraform untaint'
+alias tfim='terraform import'
+
 # ============= SYSTEM ALIASES =============
 alias ll='ls -lah'
 alias la='ls -A'
@@ -216,6 +250,9 @@ aliases() {
     echo "=== KUBERNETES ALIASES ==="
     alias | grep "kubectl" | sed 's/alias /  /'
     echo ""
+    echo "=== TERRAFORM ALIASES ==="
+    alias | grep "terraform\|^tf" | sed 's/alias /  /'
+    echo ""
     echo "=== SYSTEM ALIASES ==="
     alias | grep -E "^alias (ll|la|l|cd|c|h|path|reload)=" | sed 's/alias /  /'
     echo ""
@@ -249,6 +286,7 @@ help() {
         echo "  * help git          - Git commands"
         echo "  * help docker       - Docker commands"
         echo "  * help kubernetes   - Kubernetes commands"
+        echo "  * help terraform    - Terraform commands"
         echo "  * help system       - System commands"
         echo "  * help functions    - Utility functions"
         echo "  * help all          - Show everything"
@@ -394,7 +432,58 @@ help() {
             echo "  kns <namespace> - change namespace"
             echo ""
             ;;
-            
+
+        terraform|tf)
+            echo ""
+            echo "======================================"
+            echo "        TERRAFORM COMMANDS"
+            echo "======================================"
+            echo ""
+            echo "[INITIALIZATION & PLANNING]"
+            echo "  tf              - terraform"
+            echo "  tfi             - terraform init"
+            echo "  tfp             - terraform plan"
+            echo "  tfv             - terraform validate"
+            echo "  tff             - terraform fmt (format code)"
+            echo ""
+            echo "[APPLY & DESTROY]"
+            echo "  tfa             - terraform apply"
+            echo "  tfaa            - terraform apply -auto-approve"
+            echo "  tfd             - terraform destroy"
+            echo "  tfda            - terraform destroy -auto-approve"
+            echo ""
+            echo "[INFO & OUTPUT]"
+            echo "  tfs             - terraform show"
+            echo "  tfo             - terraform output"
+            echo "  tfr             - terraform refresh"
+            echo "  tfg             - terraform graph"
+            echo "  tfc             - terraform console"
+            echo ""
+            echo "[STATE MANAGEMENT]"
+            echo "  tfsl            - terraform state list"
+            echo "  tfss <resource> - terraform state show"
+            echo "  tfsm            - terraform state mv"
+            echo "  tfsrm           - terraform state rm"
+            echo ""
+            echo "[WORKSPACE MANAGEMENT]"
+            echo "  tfw             - terraform workspace"
+            echo "  tfwl            - terraform workspace list"
+            echo "  tfws <name>     - terraform workspace select"
+            echo "  tfwn <name>     - terraform workspace new"
+            echo "  tfwd <name>     - terraform workspace delete"
+            echo ""
+            echo "[ADVANCED]"
+            echo "  tft <resource>  - terraform taint"
+            echo "  tfu <resource>  - terraform untaint"
+            echo "  tfim            - terraform import"
+            echo ""
+            echo "[FUNCTIONS]"
+            echo "  tf-clean        - clean Terraform cache"
+            echo "  tf-check        - validate + format + plan"
+            echo "  tf-new          - initialize new Terraform project"
+            echo ""
+            ;;
+
         system|sys)
             echo ""
             echo "======================================"
@@ -465,6 +554,12 @@ help() {
             echo "  docker-ip <name>        - get container IP"
             echo "  docker-stats-live       - live stats"
             echo ""
+            echo "[TERRAFORM]"
+            echo "  tf-clean                - clean Terraform cache & files"
+            echo "  tf-check                - validate + format + plan"
+            echo "  tf-new <name>           - create new Terraform project"
+            echo "  tf-graph-viz [file]     - generate infrastructure graph"
+            echo ""
             echo "[BACKUP]"
             echo "  backup-config           - backup terminal config"
             echo ""
@@ -478,10 +573,11 @@ help() {
             help git
             help docker
             help kubernetes
+            help terraform
             help system
             help functions
             ;;
-            
+
         *)
             echo ""
             echo "[!] Unknown category: $category"
@@ -490,6 +586,7 @@ help() {
             echo "  * help git"
             echo "  * help docker"
             echo "  * help kubernetes"
+            echo "  * help terraform"
             echo "  * help system"
             echo "  * help functions"
             echo "  * help all"
