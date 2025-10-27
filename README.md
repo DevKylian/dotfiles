@@ -1,6 +1,6 @@
 # DevOps Terminal Config
 
-Kylian Dev terminal configuration with 80+ Git, Docker & Kubernetes aliases.
+Kylian Dev terminal configuration with 100+ Git, Docker, Kubernetes & Terraform aliases.
 
 ## Installation
 
@@ -44,6 +44,19 @@ kl <pod>        # logs -f
 kex <pod>       # exec -it
 ```
 
+### Terraform
+```bash
+tfi             # terraform init
+tfp             # terraform plan
+tfa             # terraform apply
+tfaa            # terraform apply -auto-approve
+tfd             # terraform destroy
+tff             # terraform fmt
+tfv             # terraform validate
+tf-new myapp    # create new Terraform project
+tf-check        # validate + format + plan
+```
+
 ### Utilities
 ```bash
 find-port 3000      # find process on port
@@ -57,6 +70,7 @@ extract file.tar.gz # extract any archive
 help            # show menu
 help git        # Git commands
 help docker     # Docker commands
+help terraform  # Terraform commands
 aliases         # list all aliases
 ```
 
