@@ -1,6 +1,6 @@
 # DevOps Terminal Config
 
-Kylian Dev terminal configuration with 100+ Git, Docker, Kubernetes & Terraform aliases.
+Kylian Dev terminal configuration with 150+ Git, Docker, Kubernetes, Terraform & Ansible aliases.
 
 ## Installation
 
@@ -57,6 +57,18 @@ tf-new myapp    # create new Terraform project
 tf-check        # validate + format + plan
 ```
 
+### Ansible
+```bash
+anp playbook.yml    # ansible-playbook
+anpc playbook.yml   # ansible-playbook --check (dry-run)
+anpv playbook.yml   # ansible-playbook -v (verbose)
+anping              # ansible all -m ping
+anvc secrets.yml    # ansible-vault create
+anved secrets.yml   # ansible-vault edit
+angi role-name      # ansible-galaxy install
+anil                # ansible-inventory --list
+```
+
 ### Utilities
 ```bash
 find-port 3000      # find process on port
@@ -71,6 +83,7 @@ help            # show menu
 help git        # Git commands
 help docker     # Docker commands
 help terraform  # Terraform commands
+help ansible    # Ansible commands
 aliases         # list all aliases
 ```
 

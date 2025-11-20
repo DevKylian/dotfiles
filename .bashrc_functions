@@ -298,6 +298,138 @@ tf-graph-viz() {
     fi
 }
 
+# ============= ANSIBLE FUNCTIONS =============
+
+ans-run() {
+    if [ -z "$1" ]; then
+        echo "Usage: ans-run <playbook.yml> [inventory] [extra-vars]"
+        echo ""
+        echo "Examples:"
+        echo "  ans-run playbook.yml"
+        echo "  ans-run playbook.yml production"
+        echo "  ans-run playbook.yml production 'version=1.2.3'"
+        return 1
+    fi
+
+    PLAYBOOK=$1
+    INVENTORY=${2:-"inventory"}
+    EXTRA_VARS=$3
+
+    echo "[*] Running Ansible playbook: $PLAYBOOK"
+    echo "[*] Inventory: $INVENTORY"
+
+    CMD="ansible-playbook $PLAYBOOK -i $INVENTORY"
+
+    if [ ! -z "$EXTRA_VARS" ]; then
+        CMD="$CMD -e \"$EXTRA_VARS\""
+    fi
+
+    # Add vault password file if exists
+    if [ -f ".vault_pass" ]; then
+        CMD="$CMD --vault-password-file .vault_pass"
+        echo "[*] Using vault password file"
+    fi
+
+    echo "[*] Command: $CMD"
+    echo ""
+
+    eval $CMD
+}
+
+ans-check() {
+    if [ -z "$1" ]; then
+        echo "Usage: ans-check <playbook.yml> [inventory]"
+        echo ""
+        echo "Performs syntax check and dry-run"
+        return 1
+    fi
+
+    PLAYBOOK=$1
+    INVENTORY=${2:-"inventory"}
+
+    echo "[*] Checking Ansible playbook: $PLAYBOOK"
+    echo ""
+
+    echo "[1/2] Syntax check..."
+    if ! ansible-playbook "$PLAYBOOK" --syntax-check; then
+        echo "[!] Syntax check failed"
+        return 1
+    fi
+    echo "[+] Syntax OK"
+    echo ""
+
+    echo "[2/2] Dry-run (check mode)..."
+    ansible-playbook "$PLAYBOOK" -i "$INVENTORY" --check --diff
+
+    echo ""
+    echo "[+] Check complete"
+}
+
+ans-vault-init() {
+    VAULT_FILE=${1:-".vault_pass"}
+
+    if [ -f "$VAULT_FILE" ]; then
+        echo "[!] Vault password file already exists: $VAULT_FILE"
+        read -p "Overwrite? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "[!] Cancelled"
+            return 1
+        fi
+    fi
+
+    echo "[*] Creating vault password file: $VAULT_FILE"
+    echo ""
+
+    read -s -p "Enter vault password: " VAULT_PASS
+    echo
+    read -s -p "Confirm vault password: " VAULT_PASS_CONFIRM
+    echo
+
+    if [ "$VAULT_PASS" != "$VAULT_PASS_CONFIRM" ]; then
+        echo "[!] Passwords do not match"
+        return 1
+    fi
+
+    echo "$VAULT_PASS" > "$VAULT_FILE"
+    chmod 600 "$VAULT_FILE"
+
+    echo "[+] Vault password file created: $VAULT_FILE"
+    echo "[*] File permissions set to 600"
+    echo ""
+    echo "Add to .gitignore:"
+    echo "  echo '$VAULT_FILE' >> .gitignore"
+    echo ""
+    echo "Usage with ansible-playbook:"
+    echo "  ansible-playbook playbook.yml --vault-password-file $VAULT_FILE"
+}
+
+ans-inventory-ping() {
+    INVENTORY=${1:-"inventory"}
+
+    echo "[*] Pinging all hosts in inventory: $INVENTORY"
+    echo ""
+
+    ansible all -i "$INVENTORY" -m ping
+}
+
+ans-facts() {
+    if [ -z "$1" ]; then
+        echo "Usage: ans-facts <host> [inventory]"
+        echo ""
+        echo "Gather facts from a specific host"
+        return 1
+    fi
+
+    HOST=$1
+    INVENTORY=${2:-"inventory"}
+
+    echo "[*] Gathering facts from: $HOST"
+    echo ""
+
+    ansible "$HOST" -i "$INVENTORY" -m setup
+}
+
 # ============= NETWORK FUNCTIONS =============
 
 find-port() {
@@ -413,6 +545,11 @@ export -f tf-clean
 export -f tf-check
 export -f tf-new
 export -f tf-graph-viz
+export -f ans-run
+export -f ans-check
+export -f ans-vault-init
+export -f ans-inventory-ping
+export -f ans-facts
 export -f find-port
 export -f kill-port
 export -f backup-config
@@ -440,6 +577,13 @@ functions-list() {
     echo "  tf-check            - validate + format + plan"
     echo "  tf-new <name>       - create new Terraform project"
     echo "  tf-graph-viz [file] - generate infrastructure graph"
+    echo ""
+    echo "[ANSIBLE]"
+    echo "  ans-run <pb> [inv]  - run playbook with common options"
+    echo "  ans-check <pb>      - syntax check + dry-run"
+    echo "  ans-vault-init      - initialize vault password file"
+    echo "  ans-inventory-ping  - ping all hosts in inventory"
+    echo "  ans-facts <host>    - gather facts from host"
     echo ""
     echo "[NETWORK]"
     echo "  find-port <port>    - find process using port"
