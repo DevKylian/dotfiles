@@ -121,6 +121,49 @@ alias tft='terraform taint'
 alias tfu='terraform untaint'
 alias tfim='terraform import'
 
+# ============= ANSIBLE ALIASES =============
+alias ans='ansible'
+alias anp='ansible-playbook'
+alias anv='ansible-vault'
+alias ang='ansible-galaxy'
+alias ani='ansible-inventory'
+alias anc='ansible-config'
+
+# Playbook execution
+alias anpc='ansible-playbook --check'
+alias anpd='ansible-playbook --diff'
+alias anpv='ansible-playbook -v'
+alias anpvv='ansible-playbook -vv'
+alias anpvvv='ansible-playbook -vvv'
+alias anps='ansible-playbook --syntax-check'
+alias anpl='ansible-playbook --list-tasks'
+alias anpt='ansible-playbook --list-tags'
+
+# Inventory
+alias anil='ansible-inventory --list'
+alias anig='ansible-inventory --graph'
+
+# Vault operations
+alias anve='ansible-vault encrypt'
+alias anvd='ansible-vault decrypt'
+alias anvc='ansible-vault create'
+alias anved='ansible-vault edit'
+alias anvv='ansible-vault view'
+alias anvr='ansible-vault rekey'
+
+# Galaxy
+alias angi='ansible-galaxy install'
+alias angl='ansible-galaxy list'
+alias angr='ansible-galaxy remove'
+alias angs='ansible-galaxy search'
+alias angin='ansible-galaxy init'
+
+# Ad-hoc commands helpers
+alias anping='ansible all -m ping'
+alias ansetup='ansible all -m setup'
+alias ancopy='ansible all -m copy'
+alias anshell='ansible all -m shell'
+
 # ============= SYSTEM ALIASES =============
 alias ll='ls -lah'
 alias la='ls -A'
@@ -253,6 +296,9 @@ aliases() {
     echo "=== TERRAFORM ALIASES ==="
     alias | grep "terraform\|^tf" | sed 's/alias /  /'
     echo ""
+    echo "=== ANSIBLE ALIASES ==="
+    alias | grep "ansible\|^an" | sed 's/alias /  /'
+    echo ""
     echo "=== SYSTEM ALIASES ==="
     alias | grep -E "^alias (ll|la|l|cd|c|h|path|reload)=" | sed 's/alias /  /'
     echo ""
@@ -287,6 +333,7 @@ help() {
         echo "  * help docker       - Docker commands"
         echo "  * help kubernetes   - Kubernetes commands"
         echo "  * help terraform    - Terraform commands"
+        echo "  * help ansible      - Ansible commands"
         echo "  * help system       - System commands"
         echo "  * help functions    - Utility functions"
         echo "  * help all          - Show everything"
@@ -484,6 +531,62 @@ help() {
             echo ""
             ;;
 
+        ansible|ans)
+            echo ""
+            echo "======================================"
+            echo "         ANSIBLE COMMANDS"
+            echo "======================================"
+            echo ""
+            echo "[CORE COMMANDS]"
+            echo "  ans             - ansible"
+            echo "  anp <playbook>  - ansible-playbook"
+            echo "  anv             - ansible-vault"
+            echo "  ang             - ansible-galaxy"
+            echo "  ani             - ansible-inventory"
+            echo "  anc             - ansible-config"
+            echo ""
+            echo "[PLAYBOOK EXECUTION]"
+            echo "  anpc <playbook> - ansible-playbook --check (dry-run)"
+            echo "  anpd <playbook> - ansible-playbook --diff"
+            echo "  anpv <playbook> - ansible-playbook -v (verbose)"
+            echo "  anpvv           - ansible-playbook -vv (more verbose)"
+            echo "  anpvvv          - ansible-playbook -vvv (debug mode)"
+            echo "  anps <playbook> - ansible-playbook --syntax-check"
+            echo "  anpl <playbook> - ansible-playbook --list-tasks"
+            echo "  anpt <playbook> - ansible-playbook --list-tags"
+            echo ""
+            echo "[INVENTORY]"
+            echo "  anil            - ansible-inventory --list"
+            echo "  anig            - ansible-inventory --graph"
+            echo ""
+            echo "[VAULT OPERATIONS]"
+            echo "  anvc <file>     - ansible-vault create (new encrypted file)"
+            echo "  anved <file>    - ansible-vault edit (edit encrypted file)"
+            echo "  anvv <file>     - ansible-vault view (view encrypted file)"
+            echo "  anve <file>     - ansible-vault encrypt"
+            echo "  anvd <file>     - ansible-vault decrypt"
+            echo "  anvr <file>     - ansible-vault rekey (change password)"
+            echo ""
+            echo "[GALAXY]"
+            echo "  angi <role>     - ansible-galaxy install"
+            echo "  angl            - ansible-galaxy list"
+            echo "  angr <role>     - ansible-galaxy remove"
+            echo "  angs <term>     - ansible-galaxy search"
+            echo "  angin <role>    - ansible-galaxy init (create role)"
+            echo ""
+            echo "[AD-HOC COMMANDS]"
+            echo "  anping          - ansible all -m ping"
+            echo "  ansetup         - ansible all -m setup (gather facts)"
+            echo "  ancopy          - ansible all -m copy"
+            echo "  anshell         - ansible all -m shell"
+            echo ""
+            echo "[FUNCTIONS]"
+            echo "  ans-run <playbook>  - run playbook with common options"
+            echo "  ans-check           - syntax check + dry-run playbook"
+            echo "  ans-vault-init      - initialize vault password file"
+            echo ""
+            ;;
+
         system|sys)
             echo ""
             echo "======================================"
@@ -560,6 +663,13 @@ help() {
             echo "  tf-new <name>           - create new Terraform project"
             echo "  tf-graph-viz [file]     - generate infrastructure graph"
             echo ""
+            echo "[ANSIBLE]"
+            echo "  ans-run <pb> [inv]      - run playbook with common options"
+            echo "  ans-check <pb>          - syntax check + dry-run"
+            echo "  ans-vault-init          - initialize vault password file"
+            echo "  ans-inventory-ping      - ping all hosts in inventory"
+            echo "  ans-facts <host>        - gather facts from host"
+            echo ""
             echo "[BACKUP]"
             echo "  backup-config           - backup terminal config"
             echo ""
@@ -574,6 +684,7 @@ help() {
             help docker
             help kubernetes
             help terraform
+            help ansible
             help system
             help functions
             ;;
@@ -587,6 +698,7 @@ help() {
             echo "  * help docker"
             echo "  * help kubernetes"
             echo "  * help terraform"
+            echo "  * help ansible"
             echo "  * help system"
             echo "  * help functions"
             echo "  * help all"
